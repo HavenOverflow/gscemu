@@ -1,0 +1,73 @@
+# GSCEmulator v3 development standard
+
+-----
+## arguments
+
+--chip
+	- `dauntless`(should this branch out?)
+	- `haven`
+	- `citadel`
+defaults to `haven`
+
+--start-vtor
+	- `ROM`
+	- `RO`
+	- `RW` <-- behavior can change if dauntless, as RW VTOR is dynamic on dauntless
+	- (any hex address)
+defaults to `ROM`, which is 0x0
+
+--debug-level
+	- `none` <-- no debug logs
+	- `low` <-- for devs, to notify if regs are unimplemented, if regs are not meant to be read from, etc etc
+	- `high` <-- TBC
+	- `max` <-- everything going on, register writes/reads, GLOBALSEC SB_BL_SIG, components like UART, CRYPTO, KEYMGR and so on.
+defaults to `none`
+
+--prog-image
+	- (any path to a file)
+no default, compulsory option.
+
+--rom-image
+	- (any path to a file)
+no default, compulsory option.
+
+--restore-image
+	- (any path to a file)
+no default, compulsory option. the path doesn't have to exist.
+
+--image-size-relaxed
+	- False
+	- True
+defualts to `False`
+
+--pc-debugging
+	- False
+	- True <-- default to save in ./pc.txt 
+	- (any path to a file)
+defualts to `False`
+
+// make an arg override method so we do not have to keep specifying arguments
+// size check for prog-image, rom-image, restore-image to ensure that the image given fits the prog/rom region, unless image-size-relaxed is specified
+
+-----
+## component threading
+
+threaded:
+	PMU
+	GPIO0
+	GPIO1
+	USB0
+	TRNG0
+	CRYPTO0 // should we really make this threaded? best case scenario is that it is, but it doesn't necessarily have to be.
+	TIMELS0
+	WATCHDOG0
+	KEYMGR0
+	UART0
+	PINMUX
+	SPI0
+	SPS0
+
+non-threaded:
+	GLOBALSEC
+	M3
+	FUSE # its just some hardcoded values in registers, no need to add unnecessary complexity
