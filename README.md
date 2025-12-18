@@ -11,4 +11,4 @@ powered by unicorn and python, gscemulator runs a copy of the public firmware.
 `pip3 install -r requirements.txt && python3 main.py`
 
 ## standard for devs
-some parts of the code uses the google style guide for python, etc for python function comments
+some parts of the code uses the google style guide for python, etc for python function comments, type system etc etc

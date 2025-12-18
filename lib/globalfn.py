@@ -12,6 +12,8 @@ class GscemuLoggerSettings:
     '''Object to contain GscemuLogger print logger settings.
 
     Attributes:
+        global_switch:
+            Enable/disable ALL prints except FATAL prints.
         debug_prints:
             Enable/disable DEBUG prints.
         info_prints: 
@@ -21,12 +23,12 @@ class GscemuLoggerSettings:
     '''
 
     def __init__(
-        self, debug_prints, info_prints, warning_prints
+        self, global_switch, debug_prints, info_prints, warning_prints
     ) -> None:
+        self.global_switch = global_switch
         self.debug = debug_prints
         self.info = info_prints
         self.warning = warning_prints
-
 
 class GscemuLogger:
     '''Global logger that's used for debugging. 
