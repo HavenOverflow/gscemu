@@ -8,7 +8,15 @@ Import where we share classes/objects/variables across the codebase.
 
 import inspect
 import os
-from termcolor import colored
+from termcolor import colored as colored_text
+
+# Colors that define the printed color to the terminal
+_PRINT_COLOR = {
+    "INFO": "magenta",
+    "DEBUG": "green",
+    "WARNING": "yellow",
+    "FATAL": "red",
+}
 
 class GscemuLoggerSettings:
     """Object to contain GscemuLogger print logger settings.
@@ -81,21 +89,41 @@ class GscemuLogger:
                 .f_code.co_filename # Get the filename in the caller's frame
             )
 
+    def _formatted_print(
+        self, type, *args, **kwargs
+        ) -> None:
+        """Print a special formatted print string based on the print type."""
+        
+        # This chunk of code assumes that _PRINT_COLOR has all the supported
+        # print types, which it should, although the dict was not intended for
+        # this purpose.
+        if type not in _PRINT_COLOR.keys():
+            # This is a print to the dev that the logger was implemented
+            # wrongly. This should honestly never happen, but redundancy!
+            print("Formatted print failed.")
+            return
+
+        print(
+            colored_text(f"{type}[", _PRINT_COLOR[type]) +
+            self.caller +
+            colored_text("]:", _PRINT_COLOR[type]),
+            *args,
+            **kwargs
+        )
+
     def debug(
             self, *args, **kwargs
         ) -> bool:
         """Print a string with "DEBUG[xxx.py]: {your_string}".
 
         Returns:
-            Boolean of whether we printed the message. `True` if the setting was
-            enabled, `False` if the setting was disabled.
+            True if the line was printed, False if not.
         """
 
-        if not self.settings:
+        if not (self.settings.global_switch or self.settings.debug):
             return False
         
-        print(f"DEBUG[{self.caller}]:", *args, **kwargs)
-
+        self._formatted_print("DEBUG", *args, **kwargs)
         return True
 
     def warning(
@@ -104,15 +132,13 @@ class GscemuLogger:
         """Print a string with "WARNING[xxx.py]: {your_string}".
         
         Returns:
-            Boolean of whether we printed the message. `True` if the setting was
-            enabled, `False` if the setting was disabled.
+            True if the line was printed, False if not.
         """
 
-        if not self.settings.warning:
+        if not (self.settings.global_switch or self.settings.warning):
             return False
         
-        print(f"WARNING[{self.caller}]:", *args, **kwargs)
-
+        self._formatted_print("WARNING", *args, **kwargs)
         return True
     
     def info(
@@ -121,15 +147,13 @@ class GscemuLogger:
         """Print a string with "INFO[xxx.py]: {your_string}".
         
         Returns:
-            Boolean of whether we printed the message. `True` if the setting was
-            enabled, `False` if the setting was disabled.
+            True if the line was printed, False if not.
         """
 
-        if not self.settings.info:
+        if not (self.settings.global_switch or self.settings.info):
             return False
-        
-        print(f"INFO[{self.caller}]:", *args, **kwargs)
 
+        self._formatted_print("INFO", *args, **kwargs)
         return True
     
     def fatal(
@@ -138,13 +162,12 @@ class GscemuLogger:
         """Print a string with "FATAL[xxx.py]: {your_string}".
         
         Returns:
-            Boolean of whether we printed the message. `True` if the setting was
-            enabled, `False` if the setting was disabled.
+            True if the line was printed, False if not.
 
             This is a fatal message, and it can NEVER be disabled. We will
             always return `True`. This is a special exception to this print
             logging function.
         """
         
-        print(f"FATAL[{self.caller}]:", *args, **kwargs)
+        self._formatted_print("FATAL", *args, **kwargs)
         return True
