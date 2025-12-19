@@ -1,4 +1,4 @@
-from lib.globalfn import GscemuLoggerSettings
+from lib.logger import GscemuLoggerSettings
 
 GSCEMULATOR_LOGGER_SETTINGS = GscemuLoggerSettings(
     global_switch=True,

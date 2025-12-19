@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025 HavenOverflow/appleflyer
 
-"""Share objects across the entire codebase
+"""The emulator's print logger.
 
-Import where we share classes/objects/variables across the codebase.
+This is a simple class that is shared across the entire codebase where it is
+used to log many operations in the emulator.
 """
 
 import inspect
@@ -90,7 +91,7 @@ class GscemuLogger:
             )
 
     def _formatted_print(
-        self, type, *args, **kwargs
+            self, type, *args, **kwargs
         ) -> None:
         """Print a special formatted print string based on the print type."""
         
@@ -120,7 +121,7 @@ class GscemuLogger:
             True if the line was printed, False if not.
         """
 
-        if not (self.settings.global_switch or self.settings.debug):
+        if not (self.settings.global_switch and self.settings.debug):
             return False
         
         self._formatted_print("DEBUG", *args, **kwargs)
@@ -135,7 +136,7 @@ class GscemuLogger:
             True if the line was printed, False if not.
         """
 
-        if not (self.settings.global_switch or self.settings.warning):
+        if not (self.settings.global_switch and self.settings.warning):
             return False
         
         self._formatted_print("WARNING", *args, **kwargs)
@@ -150,7 +151,7 @@ class GscemuLogger:
             True if the line was printed, False if not.
         """
 
-        if not (self.settings.global_switch or self.settings.info):
+        if not (self.settings.global_switch and self.settings.info):
             return False
 
         self._formatted_print("INFO", *args, **kwargs)

@@ -9,7 +9,7 @@ instance of gscemulator independently, for testing or fuzzing, so that they need
 not to take the effort to create code to interact with the emulator object.
 """
 
-from lib.globalfn import *
+from lib.logger import GscemuLogger
 from env import *
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
