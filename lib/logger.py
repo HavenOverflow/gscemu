@@ -90,9 +90,7 @@ class GscemuLogger:
                 .f_code.co_filename # Get the filename in the caller's frame
             )
 
-    def _formatted_print(
-            self, type, *args, **kwargs
-        ) -> None:
+    def _formatted_print(self, type, *args, **kwargs) -> None:
         """Print a special formatted print string based on the print type."""
         
         # This chunk of code assumes that _PRINT_COLOR has all the supported
@@ -112,9 +110,7 @@ class GscemuLogger:
             **kwargs
         )
 
-    def debug(
-            self, *args, **kwargs
-        ) -> bool:
+    def debug(self, *args, **kwargs) -> bool:
         """Print a string with "DEBUG[xxx.py]: {your_string}".
 
         Returns:
@@ -127,9 +123,7 @@ class GscemuLogger:
         self._formatted_print("DEBUG", *args, **kwargs)
         return True
 
-    def warning(
-            self, *args, **kwargs
-        ) -> bool:
+    def warning(self, *args, **kwargs) -> bool:
         """Print a string with "WARNING[xxx.py]: {your_string}".
         
         Returns:
@@ -142,9 +136,7 @@ class GscemuLogger:
         self._formatted_print("WARNING", *args, **kwargs)
         return True
     
-    def info(
-            self, *args, **kwargs
-        ) -> bool:
+    def info(self, *args, **kwargs) -> bool:
         """Print a string with "INFO[xxx.py]: {your_string}".
         
         Returns:
@@ -157,9 +149,7 @@ class GscemuLogger:
         self._formatted_print("INFO", *args, **kwargs)
         return True
     
-    def fatal(
-            self, *args, **kwargs
-        ) -> bool:
+    def fatal(self, *args, **kwargs) -> bool:
         """Print a string with "FATAL[xxx.py]: {your_string}".
         
         Returns:
