@@ -11,7 +11,7 @@ import inspect
 import os
 from termcolor import colored as colored_text
 
-# Colors that define the printed color to the terminal
+# Colors that define the printed color to the terminal based on print type.
 _PRINT_COLOR = {
     "INFO": "magenta",
     "DEBUG": "green",
