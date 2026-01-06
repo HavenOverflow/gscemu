@@ -88,6 +88,7 @@ GLOBALSEC_REGS = {
 M3_REGS = {
     "DWT_CTRL": 0x1000,
     "DEMCR": 0xedfc,
+    "ITCMCR": 0xef90,
     "CPUID": 0xed00,
 
     "UNKNOWN_REG1": 0xef90,

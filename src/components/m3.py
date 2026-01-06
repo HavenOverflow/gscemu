@@ -25,6 +25,7 @@ class ArmSC300:
     def __init__(self):
         self.mutex = FifoLock()
         self.demcr = 0
+        self.itcmcr = 0
         self.dwt_ctrl = 0
         self.cpuid = 0x410fc331 # Known CPUID for the ArmSC300
 
@@ -38,6 +39,18 @@ class ArmSC300:
     def write_demcr(self, val: int) -> None:
         with self.mutex:
             self.demcr = val
+
+    def read_itcmcr(self, addr: int) -> None:
+        with self.mutex:
+            ucmutex().mem_write(
+                addr,
+                (self.itcmcr).to_bytes(4, "little")
+            )
+
+    def write_itcmcr(self, val: int) -> None:
+        with self.mutex:
+            self.itcmcr = val & 0x3
+
 
     def read_dwt_ctrl(self, addr: int) -> None:
         with self.mutex:
@@ -66,6 +79,7 @@ _REG_FUNC_MAP = {
     M3_REGS["DEMCR"]: [c_emu.read_demcr, c_emu.write_demcr],
     M3_REGS["DWT_CTRL"]: [c_emu.read_dwt_ctrl, c_emu.write_dwt_ctrl],
     M3_REGS["CPUID"]: [c_emu.read_cpuid, c_emu.write_cpuid],
+    M3_REGS["ITCMCR"]:   [c_emu.read_itcmcr,   c_emu.write_itcmcr],
 }
 
 def component_handler(uc: qemu.Uc,
