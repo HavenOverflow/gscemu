@@ -90,6 +90,4 @@ M3_REGS = {
     "DEMCR": 0xedfc,
     "ITCMCR": 0xef90,
     "CPUID": 0xed00,
-
-    "UNKNOWN_REG1": 0xef90,
 }
