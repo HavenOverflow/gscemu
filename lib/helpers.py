@@ -3,6 +3,7 @@
 
 from lib.globalvars import *
 from lib.logger import GscemuLogger
+from lib.reg_lookup import register_lookup
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
 
@@ -13,7 +14,8 @@ def unhandled_register_exit(logger: GscemuLogger,
                             component: str, 
                             address: int
                             ) -> None:
-    logger.fatal(f"Unhandled register 0x{address:x} in component {component}!")
+    reg_name = register_lookup(address)
+    logger.fatal(f"Unhandled register 0x{address:x} in component {component}! (Defined as {reg_name})")
     halt_emulation()
 
 def unhandled_register_io(logger: GscemuLogger, 
