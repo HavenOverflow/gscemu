@@ -20,7 +20,7 @@ from lib.logger import GscemuLogger
 # flash mappings:
 # bank0, control0 = RO_A + RW_A (0x40000 - 0x7ffff) -> flash bank(0x0 - 0x3ffff)
 # bank0, control1 = RO_B + RW_B (0x80000 - 0xbffff) -> flash bank(0x0 - 0x3ffff)
-# bank1, control0 = should exist, but never used. do not support.
+# bank1, control0 = INFO0       (0x20000 - 0x207ff) -> flash bank(0x0 - 0x7ff)
 # bank1, control1 = INFO1       (0x28000 - 0x287ff) -> flash bank(0x0 - 0x7ff)
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
