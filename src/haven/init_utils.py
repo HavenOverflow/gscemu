@@ -75,15 +75,11 @@ def map_memory(
 
 def prepare_flash_space(ctx: EmulatorContext) -> None:
     """We need to fill the entire flash space with 0xFF every initialization."""
-    ctx.uc.mem_write(
-        REG_DEFS["FLASH_PROG"]["base_addr"],
-        (b"\xff" * REG_DEFS["FLASH_PROG"]["size"]),
-    )
-
-    ctx.uc.mem_write(
-        REG_DEFS["INFO1"]["base_addr"], (b"\xff" * REG_DEFS["INFO1"]["size"])
-    )
-
+    for flash_regions in ["FLASH_PROG", "INFO0", "INFO1"]:
+        ctx.uc.mem_write(
+            REG_DEFS[flash_regions]["base_addr"],
+            (b"\xff" * REG_DEFS[flash_regions]["size"]),
+        )
 
 def load_firmware(
     ctx: EmulatorContext,

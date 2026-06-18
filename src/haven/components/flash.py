@@ -25,7 +25,7 @@ from lib.logger import GscemuLogger
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
 
-_FSH_START_ADDR_MAP = [[0x40000, 0x80000], [None, 0x28000]]
+_FSH_START_ADDR_MAP = [[0x40000, 0x80000], [0x20000, 0x28000]]
 _FSH_SIZE_BOUNDS = [
     0x3FFFF,  # BANK0 bounds
     0x7FF,  # BANK1 bounds
@@ -106,16 +106,10 @@ class FlashController:
                     self.pe_control
                 ]
 
-                if not self.start_addr:
-                    # On the Cr50, INFO0 is never used. Therefore, we will also
-                    # not allow usage of it. We also do not know where INFO0 is
-                    # mapped, or if it is even mapped.
-                    prints.warning("BANK1, CONTROL0 used, unsupported config.")
-                else:
-                    try:
-                        self.opmap[self.opcode]()
-                    except KeyError:
-                        prints.warning("Invalid PE_CONTROL provided to FLASH!")
+                try:
+                    self.opmap[self.opcode]()
+                except KeyError:
+                    prints.warning("Invalid PE_CONTROL provided to FLASH!")
 
                 # Operation completed! Clear PE_CONTROL and opcode.
                 self.opcode = 0

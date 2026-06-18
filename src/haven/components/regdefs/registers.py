@@ -26,6 +26,12 @@ REG_DEFS = {
         "base_addr": 0x10000,
         "size": 0x10000,
     },
+    # INFO0 mapping determined from tock-on-titan repo. found by kxtzownsu.
+    # google/tock-on-titan/kernel/h1/src/hil/flash/h1_hw.rs#L30
+    "INFO0": {  # No handler necessary
+        "base_addr": 0x20000,
+        "size": 0x800,
+    },
     "INFO1": {  # No handler necessary
         "base_addr": 0x28000,
         "size": 0x800,
