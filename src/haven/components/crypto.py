@@ -57,7 +57,6 @@ class CryptoAccelerator:
                         self.host_cmd = 0
                         continue
 
-                    component_stop_timer_debug(self.ctx.c_fast.timels)
                     self.crypto_emulator.set_pc(self.host_cmd)
 
                     self.host_cmd = 0  # Clear HOST_CMD
@@ -67,8 +66,6 @@ class CryptoAccelerator:
                     except Exception:
                         traceback.print_exc()
                         prints.warning("CRYPTO engine died :(")
-
-                    component_start_timer_debug(self.ctx.c_fast.timels)
 
                     pend_external_irq(self.ctx.c_fast.m3, 4)
                     # print(time.perf_counter() - start_time)
