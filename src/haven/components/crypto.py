@@ -68,7 +68,7 @@ class CryptoAccelerator:
                         prints.warning("CRYPTO engine died :(")
 
                     pend_external_irq(self.ctx.c_fast.m3, 4)
-                    # print(time.perf_counter() - start_time)
+                    # print(f"crypto op -> {time.perf_counter() - start_time:.20f}")
 
                 self.opqueue.task_done()
 
