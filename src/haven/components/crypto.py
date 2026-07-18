@@ -9,11 +9,7 @@ import traceback
 import typing
 
 import unicorn as qemu
-from ot_dsim.bignum_lib.instructions import InsContext as CryptoEmuICtx
-from ot_dsim.bignum_lib.instructions import InstructionFactory as CryptoEmuIF
-
-# ot_dsim package imports.
-from ot_dsim.bignum_lib.machine import Machine as CryptoEmu
+from ot_dsim import CryptoEngine
 
 from env import *
 from lib.emulator_context import ComponentObjects, EmulatorContext
@@ -34,20 +30,13 @@ class CryptoAccelerator:
     def __init__(self, ctx: EmulatorContext):
         self.ctx = ctx
 
-        self.assembler = {"factory": CryptoEmuIF(), "ins_ctx": CryptoEmuICtx()}
-
         self.opthread = None
         self.opqueue = queue.Queue()
 
-        self.crypto_emulator = None
+        self.crypto_emulator = CryptoEngine()
         self.control = 0
         self.rand_stall_ctl = 0
         self.host_cmd = 0
-
-        self.imem_mem = [0] * 1024
-        self.imem_assembled = [0] * 1024
-
-        self.dmem_mem = [0] * 128
 
     def crypto_worker(self) -> None:
         while True:
@@ -69,33 +58,16 @@ class CryptoAccelerator:
                         continue
 
                     component_stop_timer_debug(self.ctx.c_fast.timels)
-                    if self.crypto_emulator is None:
-                        self.crypto_emulator = CryptoEmu(
-                            self.dmem_mem.copy(),
-                            self.imem_assembled.copy(),
-                            self.host_cmd,
-                            None,
-                            CryptoEmuICtx(),
-                        )
-                    else:
-                        self.crypto_emulator.set_pc(self.host_cmd, True)
+                    self.crypto_emulator.set_pc(self.host_cmd)
 
                     self.host_cmd = 0  # Clear HOST_CMD
 
                     try:
-                        while self.crypto_emulator.step_continue():
-                            pass
+                        self.crypto_emulator.run_emulator()
                     except Exception:
                         traceback.print_exc()
-                        if self.crypto_emulator is not None:
-                            prints.debug(
-                                self.crypto_emulator.get_instruction(
-                                    self.crypto_emulator.get_pc()
-                                )
-                            )
                         prints.warning("CRYPTO engine died :(")
 
-                    self.dmem_mem = self.crypto_emulator.get_full_dmem().copy()
                     component_start_timer_debug(self.ctx.c_fast.timels)
 
                     pend_external_irq(self.ctx.c_fast.m3, 4)
@@ -137,7 +109,7 @@ class CryptoAccelerator:
         self.control = 0
 
     def clear_emulator_object(self) -> None:
-        self.crypto_emulator = None
+        self.crypto_emulator.reset_emulator_state()
 
     def read_control(self, size: int, queue: queue.Queue) -> None:
         # Should be zero everytime this is read anyways.
@@ -162,63 +134,18 @@ class CryptoAccelerator:
             self.clear_emulator_object()
 
     def read_imem(self, size: int, queue: queue.Queue, index: int) -> None:
-        queue.put(self.imem_mem[index])
+        queue.put(self.crypto_emulator.get_imem(index))
 
     def write_imem(self, size: int, value: int, index: int) -> None:
         # Clear emulator state on IMEM write if emulator state has been
         # created?
-        if self.crypto_emulator is not None:
-            self.crypto_emulator = None
-            self.imem_mem = [0] * 1024
-            self.imem_assembled = [0] * 1024
-
-        try:
-            assembled = self.assembler["factory"].factory_bin(
-                value, self.assembler["ins_ctx"]
-            )
-        except Exception:
-            if not (value == 0xDDDDDDDD):
-                prints.warning(
-                    f"IMEM instruction was invalid! noping out insn {value:x}!"
-                )
-
-            assembled = self.assembler["factory"].factory_bin(
-                0xFC000000, self.assembler["ins_ctx"]
-            )
-
-        self.imem_mem[index] = value
-        self.imem_assembled[index] = assembled
+        self.crypto_emulator.set_imem(index, value)
 
     def read_dmem(self, size: int, queue: queue.Queue, index: int) -> None:
-        element_idx = index // 8
-        word_idx = index % 8
-        bit_offset = word_idx * 32
-
-        if self.crypto_emulator is not None:
-            queue.put(
-                (self.crypto_emulator.get_dmem(element_idx) >> bit_offset)
-                & 0xFFFFFFFF
-            )
-        else:
-            queue.put((self.dmem_mem[element_idx] >> bit_offset) & 0xFFFFFFFF)
+        queue.put(self.crypto_emulator.get_dmem(index))
 
     def write_dmem(self, size: int, value: int, index: int) -> None:
-        element_idx = index // 8
-        word_idx = index % 8
-        value = value & 0xFFFFFFFF
-        bit_offset = word_idx * 32
-        mask = ((1 << 256) - 1) ^ (0xFFFFFFFF << bit_offset)
-
-        if self.crypto_emulator is not None:
-            current_element = self.crypto_emulator.get_dmem(element_idx)
-            self.crypto_emulator.set_dmem(
-                element_idx, (current_element & mask) | (value << bit_offset)
-            )
-        else:
-            current_element = self.dmem_mem[element_idx]
-            self.dmem_mem[element_idx] = (current_element & mask) | (
-                value << bit_offset
-            )
+        self.crypto_emulator.set_dmem(index, value)
 
     def read_int_state(self, size: int, queue: queue.Queue) -> None:
         # Doesn't matter
