@@ -76,6 +76,7 @@ def initialize_components(ctx: EmulatorContext) -> None:
         ctx, regdefs.CRYPTO_REGS
     )
 
+    # GPIO comes before PINMUX, we need to setup the PinDevice.
     ctx.components["GPIO0"] = gpio.init_GpioController(
         ctx, regdefs.GPIO_REGS, 0
     )
@@ -83,7 +84,10 @@ def initialize_components(ctx: EmulatorContext) -> None:
         ctx, regdefs.GPIO_REGS, 1
     )
 
-    # PINMUX comes after GPIO0 and GPIO1
+    # SPS comes before PINMUX, we need to setup the PinDevice.
+    ctx.components["SPS0"] = sps.init_SPISlaveDevice(ctx, regdefs.SPS_REGS)
+
+    # PINMUX comes after GPIO0, GPIO1, SPS
     ctx.components["PINMUX"] = pinmux.init_Cr50Pinmux(ctx, regdefs.PINMUX_REGS)
 
     # Order of these below don't matter.
@@ -108,4 +112,3 @@ def initialize_components(ctx: EmulatorContext) -> None:
     ctx.components["TRNG0"] = trng.init_TRNGEngine(ctx, regdefs.TRNG_REGS)
 
     ctx.components["USB0"] = usb.init_UsbController(ctx, regdefs.USB_REGS)
-    ctx.components["SPS0"] = sps.init_SPISlaveDevice(ctx, regdefs.SPS_REGS)

@@ -117,8 +117,10 @@ class PinDevice:
         self, new_pinstate: PinStatus, resistance: float | int
     ) -> None:
         self.combined_device_pininfo.pinstate = new_pinstate
-        self.combined_device_pininfo.resistance_ohms = resistance
+        self.combined_device_pininfo.resistance_ohms = float(resistance)
 
+    # This function is used for the internal muxer to connect this device
+    # to other components.
     def drive_by_component(self, driver: PinDevice) -> None:
         # Someone will drive us.
         with self.lock:
@@ -146,6 +148,11 @@ class PinDevice:
 
         self.pininfo_sync()
 
+    # This, so far, has only been used for the PINMUX internal pd/pu driving.
+    # When using this function, the driver exerts a pd/pu, but the drived device
+    # cannot exert a pd/pu on the driver. For bi-directionality,
+    # drive_by_component needs to be used.
+    # (to be refactored? iiwiw) 
     def add_external_drive_by_component(
         self, tag: str, driver: PinDevice
     ) -> None:
@@ -158,7 +165,6 @@ class PinDevice:
                         self
                     )
 
-            # TODO(appleflyer): this is a mess, to fix.
             self.device_pindevice_external[tag] = driver
             with self.device_pindevice_external[tag].lock:
                 driver.driving_components.add(self)

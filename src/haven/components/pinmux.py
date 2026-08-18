@@ -65,10 +65,25 @@ class Cr50Pinmux:
         self.gpio0: list[PinDevice] = ctx.components["GPIO0"].object.pindevices
         self.gpio1: list[PinDevice] = ctx.components["GPIO1"].object.pindevices
 
+        self.sps: list[PinDevice] = ctx.components["SPS0"].object.pindevices
+
         # Stored values just for the sake of register readback, although never
         # used in the Cr50(maybe in the BootROM/RO for register verification?)
         self.sel_stored = {}
         self.ctl_stored = {}
+
+        # Haven behavior tested with Crapple:
+        # It seems that for items like SPS, they have hardcoded PinDevice
+        # attachments with no SEL value. However, it's overridden when the SEL 
+        # register changes from 0. Have to assume here that it works like a 
+        # default, where if nothing is connected, the mux device defaults to a 
+        # device.
+        self.sel_default_overrides = {
+            self.dioa[2]: self.sps[0],  # SPS_MOSI drives DIOA2
+            self.dioa[6]: self.sps[1],  # SPS_CLK drives DIOA6
+            self.sps[2]: self.dioa[10], # DIOA10 drives SPS_MISO
+            self.dioa[12]: self.sps[3], # SPS_CS_L drives DIOA12
+        }
 
         self.exiten0 = 0
         self.exitedge0 = 0
@@ -98,7 +113,7 @@ class Cr50Pinmux:
     def _convert_pinmux_sel_reg_idx_to_pindevice(
         self, idx: int
     ) -> PinDevice | None:
-        if idx < 5:
+        if 0 < idx < 5:
             return self.diom[idx]
 
         if idx < 20:
@@ -121,7 +136,7 @@ class Cr50Pinmux:
 
         return None
 
-    # DIOxx only accepts GPIOx_GPIOx
+    # DIOxx only accepts GPIOx_GPIOx or other components.
     def _convert_pinmux_sel_val_to_gpio_pindevice(
         self, val: int
     ) -> PinDevice | None:
@@ -136,7 +151,7 @@ class Cr50Pinmux:
 
         return None
 
-    # GPIOx_GPIOx only accepts DIOxx or VIOx
+    # GPIOx_GPIOx only accepts DIOxx or VIOx or other components.
     def _convert_pinmux_sel_val_to_dio_pindevice(
         self, val: int
     ) -> PinDevice | None:
@@ -212,15 +227,24 @@ class Cr50Pinmux:
 
         # Validate the value given to the SEL register
         if value > 0x63:
+            print(f"SEL register {index} recieved invalid value.")
             drived_device.disconnect_driver()
             self.sel_stored[index] = 0
             return
 
         self.sel_stored[index] = value
 
+        driver_device = None
+
         if value == 0:
-            drived_device.disconnect_driver()
-            return
+            # Any override?
+            def_ovrd = self.sel_default_overrides.get(drived_device)
+            if def_ovrd:
+                # Yes, set override.
+                driver_device = def_ovrd
+            else: 
+                # No, so we disconnect and will return.
+                drived_device.disconnect_driver()
 
         if index < 31:
             driver_device = self._convert_pinmux_sel_val_to_gpio_pindevice(
@@ -278,6 +302,11 @@ class Cr50Pinmux:
             # Disable input
             drived_device.mask_pininfo(True)
 
+    # These registers are to wakeup the chip from deep sleep. We don't really
+    # need to implement this, since no direct implementation depends on these
+    # alone. For example, SPS is attached to GPIO. With our emulator model,
+    # deep sleep has not been implemented, so we don't need to have a "wakeup
+    # from sleep" mechanism.
     def read_exiten0(self, size: int, queue: queue.Queue) -> None:
         queue.put(self.exiten0)
 
@@ -302,9 +331,13 @@ class Cr50Pinmux:
     def write_hold(self, size: int, value: int) -> None:
         self.hold = value
 
+    def initialize_default_overrides(self) -> None:
+        for drived_device, driver_device in self.sel_default_overrides.items():
+            drived_device.drive_by_component(driver = driver_device)
 
 def init_Cr50Pinmux(ctx: EmulatorContext, regs: dict) -> ComponentObjects:
     c_emu = Cr50Pinmux(ctx)
+    c_emu.initialize_default_overrides()
     c_emu.start_worker()
 
     reg_fn_map = {

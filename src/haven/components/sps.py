@@ -2,15 +2,16 @@
 # Copyright (C) 2026 HavenOverflow/appleflyer
 
 """
-All standards based on:
-https://chromium.googlesource.com/chromiumos/platform/ec/+/refs/heads/cr50_stab/chip/g/spp_tpm.c
-https://chromium.googlesource.com/chromiumos/platform/ec/+/refs/heads/cr50_stab/chip/g/spp.c
-https://chromium.googlesource.com/chromiumos/platform/depthcharge/+/refs/heads/main/src/drivers/tpm/google/spi.c
-
 The whole point of this file is to create a SPI slave driver to interface with
 the SPI master which is the AP on real hardware.
 This is necessary for TPM operations where we can expose the route to TPM
 within gscemulator while keeping the logic accurate.
+
+All standards based on:
+https://chromium.googlesource.com/chromiumos/platform/ec/+/refs/heads/cr50_stab/chip/g/spp_tpm.c
+https://chromium.googlesource.com/chromiumos/platform/ec/+/refs/heads/cr50_stab/chip/g/spp.c
+https://chromium.googlesource.com/chromiumos/platform/ec/+/refs/heads/cr50_stab/common/tpm_registers.c
+https://chromium.googlesource.com/chromiumos/platform/depthcharge/+/refs/heads/main/src/drivers/tpm/google/spi.c
 """
 
 import queue
@@ -23,6 +24,7 @@ from env import *
 from lib.emulator_context import ComponentObjects, EmulatorContext
 from lib.helpers import unhandled_register_exit
 from lib.logger import GscemuLogger
+from lib.pindevice import PinDevice, PinStatus
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
 
@@ -33,6 +35,14 @@ class SPISlaveDevice:
 
         self.opthread = None
         self.opqueue = queue.Queue()
+
+        # Internal components, mapped with the pinmux.
+        self.pindevices: list[PinDevice] = [0] * 4
+        # 0 = MOSI, 1 = CLK, 2 = MISO, 3 = CS_L
+        self.pindevices[0] = PinDevice() # MOSI
+        self.pindevices[1] = PinDevice() # CLK
+        self.pindevices[2] = PinDevice() # MISO
+        self.pindevices[3] = PinDevice() # CS_L
 
         # Used when slave has nothing to put on MISO on a clock pulse.
         self.tx_dummy_word = 0
@@ -45,6 +55,7 @@ class SPISlaveDevice:
         self.istate = 0
         # RX/TX CTRL register
         self.fifo_ctrl = 0
+        # How many bytes before interrupting?
         self.rxfifo_threshold = 0
 
     def sps_worker(self) -> None:
