@@ -148,9 +148,9 @@ class Emulator:
             aux1=qemu.arm_const.UC_ARM_INS_WFI,
         )
 
-        if GSCEMULATOR_PC_LOGGING_SETTINGS["log_pc"]:
+        if GSCEMULATOR_PC_LOGGING_SETTINGS["enabled"]:
             self.pc_logger = open(
-                GSCEMULATOR_PC_LOGGING_SETTINGS["log_file_path"], "w"
+                GSCEMULATOR_PC_LOGGING_SETTINGS["file_path"], "w"
             )
             self.ctx.uc.hook_add(
                 htype=qemu.UC_HOOK_CODE,
