@@ -50,7 +50,8 @@ class Emulator:
 
         self.init_vtor_val = 0x0
         self.initialized = False
-        self.pc_logger = None
+        self.pc_logfile_fd = None
+        self.mmio_logfile_fd = None
 
         # For the H1B3C, we're running a ARM Cortex-M3 chip, or at least that's
         # what's documented.
@@ -149,14 +150,45 @@ class Emulator:
         )
 
         if GSCEMULATOR_PC_LOGGING_SETTINGS["enabled"]:
-            self.pc_logger = open(
+            self.pc_logfile_fd = open(
                 GSCEMULATOR_PC_LOGGING_SETTINGS["file_path"], "w"
             )
             self.ctx.uc.hook_add(
                 htype=qemu.UC_HOOK_CODE,
                 callback=hooks.pc_logger,
-                user_data=self.pc_logger,
+                user_data=self.pc_logfile_fd,
             )
+
+        if GSCEMULATOR_MMIO_TRACE["enabled"]:
+            self.mmio_logfile_fd = open(
+                GSCEMULATOR_MMIO_TRACE["file_path"], "w"
+            )
+
+            # Instead of adding the if check in the callback, we should
+            # make seperate functions. If checks can pile up and take longer
+            # over time in the callback.
+            if GSCEMULATOR_MMIO_TRACE["pc_log"]:
+                self.ctx.uc.hook_add(
+                    htype=qemu.UC_HOOK_MEM_READ_AFTER,
+                    callback=hooks.mmio_logger_read_pc,
+                    user_data=self.mmio_logfile_fd,
+                )
+                self.ctx.uc.hook_add(
+                    htype=qemu.UC_HOOK_MEM_WRITE,
+                    callback=hooks.mmio_logger_write_pc,
+                    user_data=self.mmio_logfile_fd,
+                )
+            else:
+                self.ctx.uc.hook_add(
+                    htype=qemu.UC_HOOK_MEM_READ_AFTER,
+                    callback=hooks.mmio_logger_read,
+                    user_data=self.mmio_logfile_fd,
+                )
+                self.ctx.uc.hook_add(
+                    htype=qemu.UC_HOOK_MEM_WRITE,
+                    callback=hooks.mmio_logger_write,
+                    user_data=self.mmio_logfile_fd,
+                )
 
         # Call this after the emulator has finished initializing.
         self.initialized = True

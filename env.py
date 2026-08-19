@@ -14,7 +14,15 @@ GSCEMULATOR_LOGGER_SETTINGS = GscemuLoggerSettings(
 
 GSCEMULATOR_FW_STRICT_SIZE_CHECKING = False
 
-GSCEMULATOR_PC_LOGGING_SETTINGS = {"enabled": False, "file_path": "./pc.txt"}
+GSCEMULATOR_PC_LOGGING_SETTINGS = {
+    "enabled": False, 
+    "file_path": "./pc.txt"
+}
+GSCEMULATOR_MMIO_TRACE = {
+    "enabled": False, 
+    "file_path": "./mmio-trace.txt",
+    "pc_log": False
+}
 
 # -- gscemu debug flags --
 # These flags change how the emulator works internally during runtime, and

@@ -9,6 +9,7 @@ gscemu.egg-info
 .DS_Store
 
 pc.txt
+mmio-trace.txt
 
 # for when i delete a bunch of code but it might have been a bad idea,
 # i keep some backups of local uncommited code here

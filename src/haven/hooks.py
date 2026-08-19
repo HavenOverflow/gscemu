@@ -129,6 +129,43 @@ def pc_logger(
     user_data.flush()
     return True
 
+def mmio_logger_read_pc(
+    uc: qemu.Uc, access: int, address: int, 
+    size: int, value: int, user_data: typing.TextIO,
+) -> None:
+    user_data.write(
+        f"r - {hex(address)}: {hex(value)}, "
+        f"pc={hex(uc.reg_read(qemu.arm_const.UC_ARM_REG_PC))}\n"
+    )
+    user_data.flush()
+    return
+
+def mmio_logger_write_pc(
+    uc: qemu.Uc, access: int, address: int, 
+    size: int, value: int, user_data: typing.TextIO,
+) -> None:
+    user_data.write(
+        f"w - {hex(address)}: {hex(value)}, "
+        f"pc={hex(uc.reg_read(qemu.arm_const.UC_ARM_REG_PC))}\n"
+    )
+    user_data.flush()
+    return
+
+def mmio_logger_read(
+    uc: qemu.Uc, access: int, address: int, 
+    size: int, value: int, user_data: typing.TextIO,
+) -> None:
+    user_data.write(f"r - {hex(address)}: {hex(value)}\n")
+    user_data.flush()
+    return
+
+def mmio_logger_write(
+    uc: qemu.Uc, access: int, address: int, 
+    size: int, value: int, user_data: typing.TextIO,
+) -> None:
+    user_data.write(f"w - {hex(address)}: {hex(value)}\n")
+    user_data.flush()
+    return
 
 def blank_tick_hook(
     uc: qemu.Uc, address: int, size: int, user_data: typing.TextIO
