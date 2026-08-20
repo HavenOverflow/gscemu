@@ -127,8 +127,11 @@ def load_firmware(
     # reaches the desired length. Too long a data string will be managed.
     if strict_file_size_checks:
         # Subtract 0x20 from the BootROM size!!
-        if not (len(rom_data) == (mem_map_list["FLASH_BROM"]["size"] - 0x20)):
+        cur_rom_size = len(rom_data)
+        exp_rom_size = mem_map_list["FLASH_BROM"]["size"] - 0x20
+        if not (cur_rom_size == exp_rom_size):
             prints.debug("BootROM did not meet size requirements!")
+            prints.debug(f"0x{cur_rom_size:x} != 0x{exp_rom_size:x}")
             return False
 
     # Load RO+RW into a temp var for size calculation.
@@ -139,7 +142,11 @@ def load_firmware(
     # memory. If fw_data is too short and we aren't strict, add 0s until it
     # reaches the desired length. Too long a data string will be managed.
     if strict_file_size_checks:
-        if not (len(fw_data) == (mem_map_list["FLASH_PROG"]["size"])):
+        cur_fw_size = len(fw_data)
+        exp_fw_size = mem_map_list["FLASH_PROG"]["size"]
+        if not (cur_fw_size == exp_fw_size):
+            prints.debug("FLASH did not meet size requirements!")
+            prints.debug(f"0x{cur_fw_size:x} != 0x{exp_fw_size:x}")
             return False
 
     # Load BootROM into FLASH_BROM
