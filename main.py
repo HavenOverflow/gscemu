@@ -26,6 +26,7 @@ import tty
 import time
 
 from env import *
+from pathlib import Path
 from lib.logger import GscemuLogger
 
 GSCEMULATOR_HAVEN_DEFAULT_FW_DIR = (
@@ -192,22 +193,59 @@ def main() -> bool:
         help="Wait for user to press 'Enter' to start emulation",
     )
 
+    _argparser.add_argument(
+        "--rom-image",
+        type=Path,
+        default=None,
+        help="Path to the image that will be loaded in the ROM "
+        "region. Defaults to default path if none specified."
+    )
+    _argparser.add_argument(
+        "--prog-image",
+        type=Path,
+        default=None,
+        help="Path to the image that will be loaded in the program flash "
+        "region. Defaults to default path if none specified."
+    )
+
     args = _argparser.parse_args()
 
     if args.chip == "haven":
         from src.haven import Emulator as havnEmulator
+
+        if args.rom_image:
+            bootrom_path = str(args.rom_image)
+        else:
+            bootrom_path = str(GSCEMULATOR_HAVEN_DEFAULT_FW_DIR / "rom.bin")
+
+        if args.prog_image:
+            firmware_path = str(args.prog_image)
+        else:
+            firmware_path = str(GSCEMULATOR_HAVEN_DEFAULT_FW_DIR / "fw.bin")
+
         chipemu = havnEmulator(
             {
-                "bootrom": str(GSCEMULATOR_HAVEN_DEFAULT_FW_DIR / "rom.bin"),
-                "firmware": str(GSCEMULATOR_HAVEN_DEFAULT_FW_DIR / "fw.bin"),
+                "bootrom": bootrom_path,
+                "firmware": firmware_path,
             }, GSCEMULATOR_FW_STRICT_SIZE_CHECKING
         )
     elif args.chip == "citadel":
         from src.citadel import Emulator as citadelEmulator
+        
+        if args.rom_image:
+            bootrom_path = str(args.rom_image)
+        else:
+            bootrom_path = str(GSCEMULATOR_CITADEL_DEFAULT_FW_DIR / "rom.bin")
+
+        if args.prog_image:
+            firmware_path = str(args.prog_image)
+        else:
+            firmware_path = str(GSCEMULATOR_CITADEL_DEFAULT_FW_DIR / "fw.bin")
+        
         chipemu = citadelEmulator(
             {
-                "bootrom": str(GSCEMULATOR_CITADEL_DEFAULT_FW_DIR / "rom.bin"),
-                "firmware": str(GSCEMULATOR_CITADEL_DEFAULT_FW_DIR / "fw.bin"),
+                "bootrom": bootrom_path,
+                "firmware": firmware_path,
             }, GSCEMULATOR_FW_STRICT_SIZE_CHECKING
         )
     else:
