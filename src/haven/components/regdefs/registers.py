@@ -467,7 +467,15 @@ SPS_REGS = {
     "CTRL": 0x0,  # SPS main control reg
     "DUMMY_WORD": 0x4,
     "FIFO_CTRL": 0x28,
+    "TXFIFO_SIZE": 0x2C,
+    "TXFIFO_RPTR": 0x30,
+    "TXFIFO_WPTR": 0x34,
+    "TXFIFO_THRESHOLD": 0x38,
+    "RXFIFO_SIZE": 0x3C,
+    "RXFIFO_RPTR": 0x40,
+    "RXFIFO_WPTR": 0x44,
     "RXFIFO_THRESHOLD": 0x48,
+    "VAL": 0x50,
     "ISTATE": 0x54,  # Interrupt Status register
     "ISTATE_CLR": 0x58,  # Interrupt Status Clear register
     "ICTRL": 0x64,  # Interrupt Control register

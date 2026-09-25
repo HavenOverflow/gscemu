@@ -260,7 +260,7 @@ def main() -> bool:
 
     chipemu.start_emulation()
 
-    return True # If we ever reach here, the emulator stopped. Just return True.
+    return 0 # Just return 0 for now.
 
 # We need this now that we're making gscemu a pip installable CLI tool, so that
 # we do not double call the main function, causing double emulator

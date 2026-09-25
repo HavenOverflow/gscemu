@@ -27,6 +27,7 @@ from lib.emulator_context import EmulatorContext
 from lib.logger import GscemuLogger
 
 from . import hooks
+from .ap_emu import APEmulator
 from .components import ComponentFastLookup, initialize_components
 from .components.regdefs import MMIO_REG_DEFS, REG_DEFS
 from .components.uart import cr50_uart_input, cr50_uart_output_callback
@@ -96,6 +97,12 @@ class Emulator:
         init_strap_config(self.ctx.components["PINMUX"].object) # type: ignore
         init_custom_board_pinmux_features(
             self.ctx.components["PINMUX"].object # type: ignore
+        )
+
+        self.ap = APEmulator()
+        self.ap.initialize_ap(
+            self.ctx.components["SPS0"].object,
+            self.ctx.components["PINMUX"].object,
         )
 
         self.ctx.uc.hook_add(
