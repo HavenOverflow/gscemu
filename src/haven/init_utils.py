@@ -9,6 +9,7 @@
 # as much as possible and not consider extra initialization time as wasted time.
 
 import traceback
+from pathlib import Path
 
 from env import *
 from lib.emulator_context import EmulatorContext
@@ -19,6 +20,14 @@ from .endorsement_cert import PROD_ENDORSEMENT_SEED, PROD_RO_CERT_REGION
 
 prints = GscemuLogger(GSCEMULATOR_LOGGER_SETTINGS)
 
+SAVED_STATE_REGIONS = tuple(
+    (
+        REG_DEFS[name]["base_addr"],
+        REG_DEFS[name]["size"] - (0x20 if name == "FLASH_BROM" else 0),
+    )
+    for name in ("FLASH_BROM", "FLASH_PROG", "INFO0", "INFO1")
+)
+SAVED_STATE_REGIONS_SIZE = sum(size for _, size in SAVED_STATE_REGIONS)
 
 def map_memory(
     ctx: EmulatorContext, qemu_mem_map_list: dict, mmio_mem_map_list: dict
@@ -95,7 +104,8 @@ def load_firmware(
             where FLASH_BROM and FLASH_PROG is located.
         fw_paths:
             Dictionary that contains the path to the firwmare to load.
-            BootROM and firmware paths are compulsory!
+            An existing saved_state file overrides all four flash regions.
+            Otherwise, BootROM and firmware paths are compulsory!
 
             {
                 "bootrom": "{path}",
@@ -106,7 +116,20 @@ def load_firmware(
             Boolean to enable or disable strict file size checking. This
             defaults to True if we do.
     """
-    # TODO(appleflyer): add saved_state support in the future.
+
+    saved_state = fw_paths.get("saved_state")
+    if saved_state and Path(saved_state).exists():
+        data = Path(saved_state).read_bytes()
+
+        if len(data) != SAVED_STATE_REGIONS_SIZE:
+            raise ValueError("saved_state has the wrong flash size")
+        
+        offset = 0
+        for address, size in SAVED_STATE_REGIONS:
+            ctx.uc.mem_write(address, data[offset : offset + size])
+            offset += size
+
+        return True
 
     # Check that BootROM and firmware paths were specified!
     try:

@@ -161,7 +161,7 @@ def setup_uart_output_method(chipemu: typing.Any, output_method: str) -> None:
         print("setup_uart_output_method recieved an invalid output method!")
 
 
-def main() -> bool:
+def main() -> int:
     _argparser = argparse.ArgumentParser(
         prog="gscemu",
         description="An emulator for the Google Security Chip(s), "
@@ -207,6 +207,11 @@ def main() -> bool:
         help="Path to the image that will be loaded in the program flash "
         "region. Defaults to default path if none specified."
     )
+    _argparser.add_argument(
+        "--saved-state",
+        type=Path,
+        help="Load existing flash state and save it on shutdown.",
+    )
 
     args = _argparser.parse_args()
 
@@ -227,8 +232,18 @@ def main() -> bool:
             {
                 "bootrom": bootrom_path,
                 "firmware": firmware_path,
+                "saved_state": args.saved_state,
             }, GSCEMULATOR_FW_STRICT_SIZE_CHECKING
         )
+        if not chipemu.initialized:
+            return 1
+
+        def shutdown(signum: int, _frame) -> None:
+            chipemu.close()
+            raise SystemExit(128 + signum)
+
+        signal.signal(signal.SIGINT, shutdown)
+        signal.signal(signal.SIGTERM, shutdown)
     elif args.chip == "citadel":
         from src.citadel import Emulator as citadelEmulator
         
@@ -246,8 +261,18 @@ def main() -> bool:
             {
                 "bootrom": bootrom_path,
                 "firmware": firmware_path,
+                "saved_state": args.saved_state,
             }, GSCEMULATOR_FW_STRICT_SIZE_CHECKING
         )
+        if not chipemu.initialized:
+            return 1
+
+        def shutdown(signum: int, _frame) -> None:
+            chipemu.close()
+            raise SystemExit(128 + signum)
+
+        signal.signal(signal.SIGINT, shutdown)
+        signal.signal(signal.SIGTERM, shutdown)
     else:
         prints.fatal("Chip variant unsupported as of now.")
         return False
@@ -259,6 +284,8 @@ def main() -> bool:
         print("Emulation started!")
 
     chipemu.start_emulation()
+    chipemu.ctx.ucthread.emu_thread.join()
+    chipemu.close()
 
     return 0 # Just return 0 for now.
 

@@ -21,6 +21,9 @@ The H1B3C's CPU runs off the Cortex-M3 armv7m spec.
 # os.environ['UNICORN_LOG_LEVEL'] = "0xFFFFFFFF"
 # os.environ['UNICORN_LOG_DETAIL_LEVEL'] = "1"
 
+import atexit
+from pathlib import Path
+
 import unicorn as qemu
 
 from lib.emulator_context import EmulatorContext
@@ -53,6 +56,15 @@ class Emulator:
         self.initialized = False
         self.pc_logfile_fd = None
         self.mmio_logfile_fd = None
+
+        if fw_paths.get("saved_state"):
+            self.saved_state = Path(fw_paths["saved_state"]).resolve()
+        else:
+            self.saved_state = None
+        self.restored_state = bool(
+            self.saved_state and self.saved_state.exists()
+        )
+        self.state_already_saved = False
 
         # For the H1B3C, we're running a ARM Cortex-M3 chip, or at least that's
         # what's documented.
@@ -92,7 +104,10 @@ class Emulator:
             prints.fatal("Failed to load firmware during init process.")
             return
 
-        install_tpm_endorsement_certs(self.ctx)
+        # Restored INFO and RO already contain this device's secrets/certs,
+        # so don't install anything.
+        if not self.restored_state:
+            install_tpm_endorsement_certs(self.ctx)
 
         init_strap_config(self.ctx.components["PINMUX"].object) # type: ignore
         init_custom_board_pinmux_features(
@@ -199,6 +214,8 @@ class Emulator:
 
         # Call this after the emulator has finished initializing.
         self.initialized = True
+        if self.saved_state:
+            atexit.register(self.close)
         prints.info("Emulator initialization success!")
 
     def uart_input(self, input: int) -> None:
@@ -206,6 +223,35 @@ class Emulator:
 
     def set_uart_output_fn(self, fn, user_data=None) -> None:
         cr50_uart_output_callback(self.ctx.c_fast.uart0, fn, user_data)
+
+    def close(self) -> None:
+        if self.state_already_saved:
+            return
+
+        thread = self.ctx.ucthread.emu_thread
+
+        if thread is not None:
+            self.ctx.ucthread.emu_halt()
+            thread.join(timeout=10)
+            if thread.is_alive():
+                raise RuntimeError("emu did not stop")
+    
+        if self.initialized and self.saved_state:
+            # Ensure the FLASH0 queue is cleared before we save any data
+            queue = self.ctx.components["FLASH0"].object.opqueue
+            queue.put((lambda: None, ()))
+            queue.join()
+
+            self.saved_state.parent.mkdir(parents=True, exist_ok=True)
+
+            with self.saved_state.open("wb") as stream:
+                for address, size in SAVED_STATE_REGIONS:
+                    stream.write(self.ctx.ucmutex.mem_read(address, size))
+
+            self.saved_state.chmod(0o600)
+    
+        self.state_already_saved = True
+        atexit.unregister(self.close)
 
     def start_emulation(self) -> None:
         """Run the emulator."""
