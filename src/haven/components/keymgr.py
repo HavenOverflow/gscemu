@@ -415,6 +415,8 @@ class AesEngine:
                     self.gcm_do_acc = 0
 
                 if self.key_start and self.ctrl["ENABLE"]:
+                    # Reset the aes cipher mode on a new key_start.
+                    self.aes_cipher = None
                     self.key_start = 0
 
                 if (not self.ctrl["ENABLE"]) or self.ctrl["RESET"]:
